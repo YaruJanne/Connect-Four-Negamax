@@ -1,0 +1,309 @@
+int[][] board; // 0 for empty, 1 for player, 2 for AI
+int cols = 7;
+int rows = 6;
+int currentPlayer = 1; // Player starts
+boolean gameOver = false;
+PFont font;
+
+// Difficulty levels: 1 (Easy), 2 (Medium), 3 (Hard)
+int difficulty = 2;
+boolean difficultySelected = false; // Track if difficulty is selected
+
+int timerDuration = 90; // 90 seconds
+int startTime;
+boolean timerStarted = false;
+
+void setup() {
+  size(700, 600);
+  board = new int[rows][cols];
+  font = createFont("Arial", 32);
+  textFont(font);
+}
+
+void draw() {
+  background(255);
+  
+  if (!difficultySelected) {
+    drawDifficultySelection();
+    drawTitle();
+  } else {
+    if (!timerStarted) {
+      startTime = millis();
+      timerStarted = true;
+    }
+    
+    drawBoard();
+    drawTimer();
+    
+    if (!gameOver) {
+      if (currentPlayer == 2) {
+        aiMove();
+      } else {
+        int remainingTime = timerDuration - ((millis() - startTime) / 1000);
+        if (remainingTime <= 0) {
+          gameOver = true;
+          fill(0); // Set text color to black
+          textAlign(CENTER, CENTER);
+          textSize(32);
+          text("Time's up! AI Wins!", width / 2, height / 2);
+        }
+      }
+    } else {
+      // Display winner message if game is over
+      fill(0); // Set text color to black
+      textAlign(CENTER, CENTER);
+      textSize(32);
+      if (checkWinner(1) == 1) {
+        text("Player Wins!", width / 2, height / 2);
+      } else if (checkWinner(2) == 2) {
+        text("AI Wins!", width / 2, height / 2);
+      } else {
+        text("It's a draw!", width / 2, height / 2);
+      }
+    }
+  }
+}
+
+void drawTitle() {
+  fill(0); // Set text color to black
+  textAlign(CENTER, CENTER);
+  textSize(40);
+  text("Empat Selari", width / 2, 160); // Game title
+
+  textSize(20);
+  text("Apache Santero", width / 2, 190); // Group name
+}
+
+void drawDifficultySelection() {
+  fill(0); // Set text color to black
+  textAlign(CENTER, CENTER);
+  textSize(32);
+  text("Select Difficulty", width / 2, height / 2 - 30);
+  textSize(24);
+  text("Press 1: Easy", width / 2, height / 2);
+  text("Press 2: Medium", width / 2, height / 2 + 30);
+  text("Press 3: Hard", width / 2, height / 2 + 60);
+}
+
+void drawTimer() {
+  int remainingTime = timerDuration - ((millis() - startTime) / 1000);
+  fill(0); // Set text color to black
+  textAlign(CENTER, CENTER);
+  textSize(24);
+  text("Time Remaining: " + remainingTime + " sec", width / 2, height - 30);
+}
+
+void keyPressed() {
+  if (!difficultySelected) {
+    if (key == '1') {
+      difficulty = 1; // Easy
+      difficultySelected = true;
+    } else if (key == '2') {
+      difficulty = 2; // Medium
+      difficultySelected = true;
+    } else if (key == '3') {
+      difficulty = 3; // Hard
+      difficultySelected = true;
+    }
+  }
+}
+
+void mousePressed() {
+  if (!gameOver && currentPlayer == 1 && difficultySelected) {
+    int col = mouseX / (width / cols);
+    if (isValidMove(col)) {
+      makeMove(col, currentPlayer);
+      int winner = checkWinner(currentPlayer);
+      if (winner != 0) {
+        println("Player " + currentPlayer + " wins!");
+        gameOver = true;
+      } else if (checkDraw()) {
+        println("It's a draw!");
+        gameOver = true;
+      }
+      currentPlayer = 3 - currentPlayer; // Switch player
+    }
+  }
+}
+
+void drawBoard() {
+  float w = width / cols;
+  float h = height / rows;
+  
+  for (int i = 0; i < rows; i++) {
+    for (int j = 0; j < cols; j++) {
+      float x = j * w;
+      float y = i * h;
+      stroke(0);
+      noFill();
+      ellipse(x + w / 2, y + h / 2, w * 0.8, h * 0.8); // Draw empty circles
+      if (board[i][j] == 1) {
+        fill(255, 0, 0);
+        ellipse(x + w / 2, y + h / 2, w * 0.8, h * 0.8); // Draw player disc
+      } else if (board[i][j] == 2) {
+        fill(0, 0, 255);
+        ellipse(x + w / 2, y + h / 2, w * 0.8, h * 0.8); // Draw AI disc
+      }
+    }
+  }
+}
+
+boolean isValidMove(int col) {
+  return board[0][col] == 0;
+}
+
+void makeMove(int col, int player) {
+  for (int row = rows - 1; row >= 0; row--) {
+    if (board[row][col] == 0) {
+      board[row][col] = player;
+      break;
+    }
+  }
+}
+
+int checkWinner(int player) {
+  // Check horizontal
+  for (int i = 0; i < rows; i++) {
+    for (int j = 0; j < cols - 3; j++) {
+      if (board[i][j] == player &&
+          board[i][j + 1] == player &&
+          board[i][j + 2] == player &&
+          board[i][j + 3] == player) {
+        return player;
+      }
+    }
+  }
+  
+  // Check vertical
+  for (int i = 0; i < rows - 3; i++) {
+    for (int j = 0; j < cols; j++) {
+      if (board[i][j] == player &&
+          board[i + 1][j] == player &&
+          board[i + 2][j] == player &&
+          board[i + 3][j] == player) {
+        return player;
+      }
+    }
+  }
+  
+  // Check diagonal \
+  for (int i = 0; i < rows - 3; i++) {
+    for (int j = 0; j < cols - 3; j++) {
+      if (board[i][j] == player &&
+          board[i + 1][j + 1] == player &&
+          board[i + 2][j + 2] == player &&
+          board[i + 3][j + 3] == player) {
+        return player;
+      }
+    }
+  }
+  
+  // Check diagonal /
+  for (int i = 0; i < rows - 3; i++) {
+    for (int j = 3; j < cols; j++) {
+      if (board[i][j] == player &&
+          board[i + 1][j - 1] == player &&
+          board[i + 2][j - 2] == player &&
+          board[i + 3][j - 3] == player) {
+        return player;
+      }
+    }
+  }
+  
+  return 0;
+}
+
+boolean checkDraw() {
+  for (int i = 0; i < rows; i++) {
+    for (int j = 0; j < cols; j++) {
+      if (board[i][j] == 0) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+void aiMove() {
+  int depth = getDepthForDifficulty(difficulty);
+  int bestMove = findBestMove(depth);
+  if (bestMove != -1) {
+    makeMove(bestMove, currentPlayer);
+    int winner = checkWinner(currentPlayer);
+    if (winner != 0) {
+      if (winner == 2) {
+        println("AI wins!");
+      }
+      gameOver = true;
+    } else if (checkDraw()) {
+      println("It's a draw!");
+      gameOver = true;
+    }
+    currentPlayer = 3 - currentPlayer; // Switch player
+  }
+}
+
+int getDepthForDifficulty(int difficulty) {
+  switch (difficulty) {
+    case 1: return 3; // Easy
+    case 2: return 5; // Medium
+    case 3: return 10; // Hard
+    default: return 4; // Default to medium
+  }
+}
+
+int negamax(int depth, int alpha, int beta, int player) {
+  int opponent = 3 - player;
+  int winner = checkWinner(player);
+  if (winner != 0 || depth == 0) {
+    if (winner == player) {
+      return depth; // Win for current player
+    } else if (winner == opponent) {
+      return -depth; // Loss for opponent
+    } else {
+      return 0; // Draw
+    }
+  }
+  
+  int value = Integer.MIN_VALUE;
+  for (int col = 0; col < cols; col++) {
+    if (isValidMove(col)) {
+      makeMove(col, player);
+      int score = -negamax(depth - 1, -beta, -alpha, opponent); // Opponent's score
+      undoMove(col);
+      
+      value = max(value, score);
+      alpha = max(alpha, score);
+      if (alpha >= beta) break; // Beta cutoff
+    }
+  }
+  
+  return value;
+}
+
+
+void undoMove(int col) {
+  for (int row = 0; row < rows; row++) {
+    if (board[row][col] != 0) {
+      board[row][col] = 0;
+      break;
+    }
+  }
+}
+
+int findBestMove(int depth) {
+  int bestMove = -1;
+  int bestValue = Integer.MIN_VALUE;
+  for (int col = 0; col < cols; col++) {
+    if (isValidMove(col)) {
+      makeMove(col, currentPlayer);
+      int value = -negamax(depth - 1, Integer.MIN_VALUE, Integer.MAX_VALUE, 3 - currentPlayer);
+      undoMove(col);
+      if (value > bestValue) {
+        bestValue = value;
+        bestMove = col;
+      }
+    }
+  }
+  return bestMove;
+}
